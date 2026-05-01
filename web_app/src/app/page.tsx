@@ -173,12 +173,12 @@ export default function Home() {
     }, [prediction, isPredicting]);
 
     return (
-        <main className="min-h-[100dvh] w-full overflow-x-hidden pt-8 pb-24 lg:pb-0 px-4 sm:px-6 flex flex-col items-center bg-neutral-950 text-emerald-500 font-mono relative">
+        <main className="min-h-[100dvh] w-full overflow-x-hidden pt-8 pb-24 lg:pb-0 px-4 sm:px-6 flex flex-col items-center bg-neutral-950 text-white font-mono relative">
             <div className="w-full max-w-6xl">
-                <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-[#00FF41]/30 pb-3 mb-6">
+                <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-white/20 pb-3 mb-6">
                     <div className="flex flex-col gap-1">
                         <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-wider italic">
-                            Handwritten <span className="text-emerald-300">Digit</span> Recognition
+                            Handwritten <span className="text-white">Digit</span> Recognition
                         </h1>
                         <p className="text-xs tracking-widest opacity-80 uppercase">
                             System Status: Online | ONNX Runtime Web Enabled
@@ -189,7 +189,7 @@ export default function Home() {
                         href="https://github.com/Longman-max/MNIST-Edge-Inference.git"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-[#00FF41]/70 hover:text-[#00FF41] transition-colors font-mono text-sm mt-4 sm:mt-0"
+                        className="flex items-center gap-2 text-white/70 hover:text-white transition-colors font-mono text-sm mt-4 sm:mt-0"
                         suppressHydrationWarning
                     >
                         <ExternalLink size={20} />
@@ -199,16 +199,16 @@ export default function Home() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 justify-items-center items-start gap-8 lg:gap-x-16 lg:gap-y-8 w-full max-w-6xl mx-auto">
                     <section ref={inputBufferRef} className="w-full max-w-125 flex flex-col justify-start gap-3 order-1">
-                        <div className="w-full border-b border-[#00FF41]/30 pb-2 mb-4 text-lg lg:text-xl font-bold tracking-widest uppercase">INPUT_BUFFER</div>
+                        <div className="w-full border-b border-white/20 pb-2 mb-4 text-lg lg:text-xl font-bold tracking-widest uppercase">INPUT_BUFFER</div>
 
                         <div className="flex flex-wrap items-center justify-start gap-3 w-full mb-4 min-h-[40px]">
                             <button
                                 onClick={handleClear}
-                                className="px-3 h-8 text-[11px] border border-emerald-500 hover:bg-emerald-500 hover:text-black transition-all uppercase font-bold flex items-center justify-center min-w-[110px]"
+                                className="px-3 h-8 text-[11px] border border-white hover:bg-white hover:text-black transition-all uppercase font-bold flex items-center justify-center min-w-[110px]"
                             >
                                 Clear_Buffer
                             </button>
-                            <label className="px-3 h-8 text-[11px] border border-emerald-500 hover:bg-emerald-500 hover:text-black transition-all uppercase font-bold cursor-pointer flex items-center justify-center min-w-[110px]">
+                            <label className="px-3 h-8 text-[11px] border border-white hover:bg-white hover:text-black transition-all uppercase font-bold cursor-pointer flex items-center justify-center min-w-[110px]">
                                 Upload_Image
                                 <input
                                     type="file"
@@ -220,9 +220,9 @@ export default function Home() {
                             <button
                                 onClick={handlePredict}
                                 disabled={isPredicting || !hasInput}
-                                className={`px-3 h-8 text-[11px] border border-emerald-500 transition-all uppercase font-bold flex items-center justify-center min-w-[110px] ${(isPredicting || !hasInput)
+                                className={`px-3 h-8 text-[11px] border border-white transition-all uppercase font-bold flex items-center justify-center min-w-[110px] ${(isPredicting || !hasInput)
                                         ? 'opacity-40 cursor-not-allowed'
-                                        : 'hover:bg-emerald-500 hover:text-black cursor-pointer'
+                                        : 'hover:bg-white hover:text-black cursor-pointer'
                                     }`}
                             >
                                 {isPredicting ? 'Run_Inference' : 'Run_Inference'}
@@ -230,7 +230,7 @@ export default function Home() {
                         </div>
 
                         <div className="relative group w-full flex justify-center">
-                            <div className="relative w-full overflow-hidden rounded-md border-2 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)] bg-black">
+                            <div className="relative w-full overflow-hidden rounded-md border-2 border-white/30 shadow-[0_0_15px_rgba(255,255,255,0.05)] bg-black">
                                 <div
                                     className="relative w-full transition-transform duration-200 ease-out [&_canvas]:!border-0 [&_canvas]:!shadow-none [&_canvas]:!rounded-none"
                                     style={{ transform: `rotate(${rotationAngle}deg)` }}
@@ -260,65 +260,20 @@ export default function Home() {
                         </div>
                     </section>
 
-                    <div className="w-full border border-[#00FF41]/30 p-3 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-8 rounded-sm bg-[#00FF41]/5 order-2 lg:order-3 lg:col-span-2">
-                        <div className="flex flex-col gap-2">
-                            <div className="whitespace-nowrap text-xs font-bold tracking-widest uppercase opacity-80">
-                                [ PERTURBATION_PARAMETERS ]
-                            </div>
-                            <button
-                                onClick={handleResetParameters}
-                                className="text-[10px] border border-[#00FF41]/30 px-2 py-0.5 hover:bg-[#00FF41] hover:text-black transition-all uppercase font-bold w-fit"
-                            >
-                                Reset_Values
-                            </button>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-6 w-full lg:flex-1">
-                            <div className="flex-1 flex flex-col gap-1">
-                                <div className="flex justify-between items-center w-full text-[10px] sm:text-xs font-mono opacity-80">
-                                    <span>GAUSSIAN_NOISE</span>
-                                    <span>{noiseLevel}%</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="100"
-                                    value={noiseLevel}
-                                    onChange={(e) => setNoiseLevel(Number(e.target.value))}
-                                    className="w-full h-1 bg-[#00FF41]/30 rounded-lg appearance-none cursor-pointer accent-[#00FF41]"
-                                />
-                            </div>
-
-                            <div className="flex-1 flex flex-col gap-1">
-                                <div className="flex justify-between items-center w-full text-[10px] sm:text-xs font-mono opacity-80">
-                                    <span>SPATIAL_ROTATION</span>
-                                    <span>{rotationAngle}°</span>
-                                </div>
-                                <input
-                                    type="range"
-                                    min="-180"
-                                    max="180"
-                                    value={rotationAngle}
-                                    onChange={(e) => setRotationAngle(Number(e.target.value))}
-                                    className="w-full h-1 bg-[#00FF41]/30 rounded-lg appearance-none cursor-pointer accent-[#00FF41]"
-                                />
-                            </div>
-                        </div>
-                    </div>
 
                     <section ref={resultsRef} className="w-full max-w-125 flex flex-col justify-start gap-3 order-3 lg:order-2">
-                        <div className="w-full border-b border-[#00FF41]/30 pb-2 mb-4 text-lg lg:text-xl font-bold tracking-widest uppercase">
+                        <div className="w-full border-b border-white/20 pb-2 mb-4 text-lg lg:text-xl font-bold tracking-widest uppercase">
                             OUTPUT_PROBABILITIES
                         </div>
 
                         <div className="flex flex-col lg:flex-row justify-between items-center w-full gap-3 mb-2 min-h-[40px]">
                             <div className="flex flex-row gap-3">
-                                <div className="border border-emerald-500/30 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-emerald-500/5 min-w-[110px]">
-                                    <div className="text-[10px] opacity-70 uppercase font-bold text-emerald-700">Inference_Engine</div>
+                                <div className="border border-white/20 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-white/5 min-w-[110px]">
+                                    <div className="text-[10px] opacity-70 uppercase font-bold text-gray-300">Inference_Engine</div>
                                     <div className="text-xs font-bold">ONNX-Runtime-Web</div>
                                 </div>
-                                <div className="border border-emerald-500/30 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-emerald-500/5 min-w-[110px]">
-                                    <div className="text-[10px] opacity-70 uppercase font-bold text-emerald-700">Model_Architecture</div>
+                                <div className="border border-white/20 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-white/5 min-w-[110px]">
+                                    <div className="text-[10px] opacity-70 uppercase font-bold text-gray-300">Model_Architecture</div>
                                     <div className="text-xs font-bold">CNN (MNIST)</div>
                                 </div>
                             </div>
@@ -332,16 +287,16 @@ export default function Home() {
                                         </span>
                                     </>
                                 ) : prediction === "RUNNING..." ? (
-                                    <span className="text-xs font-mono text-[#00FF41] uppercase tracking-widest animate-blink">RUNNING...</span>
+                                    <span className="text-xs font-mono text-white uppercase tracking-widest animate-blink">RUNNING...</span>
                                 ) : prediction === "UNKNOWN" ? (
                                     <>
                                         <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-1">SYSTEM_WARNING</span>
                                         <span className="text-sm sm:text-base font-bold text-red-500 tracking-wider whitespace-nowrap">ANOMALY DETECTED</span>
                                     </>
                                 ) : prediction === "AWAITING_INPUT" ? (
-                                    <span className="text-xs font-mono text-[#00FF41]/50 uppercase tracking-widest">AWAITING_INPUT...</span>
+                                    <span className="text-xs font-mono text-white/50 uppercase tracking-widest">AWAITING_INPUT...</span>
                                 ) : (
-                                    <div className="flex flex-row items-baseline gap-2 text-lg lg:text-xl font-bold text-[#00FF41] uppercase tracking-wider">
+                                    <div className="flex flex-row items-baseline gap-2 text-lg lg:text-xl font-bold text-white uppercase tracking-wider">
                                         <span className="opacity-80">PREDICTION:</span>
                                         <span>{prediction}</span>
                                     </div>
@@ -358,7 +313,7 @@ export default function Home() {
 
             <button
                 onClick={scrollToTop}
-                className={`lg:hidden fixed bottom-6 right-6 z-50 p-4 rounded-full bg-[#00FF41] text-black shadow-[0_0_20px_rgba(0,255,65,0.4)] transition-all duration-300 transform ${showScrollTop ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-50 pointer-events-none'
+                className={`lg:hidden fixed bottom-6 right-6 z-50 p-4 rounded-full bg-white text-black shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all duration-300 transform ${showScrollTop ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-50 pointer-events-none'
                     }`}
                 aria-label="Scroll to Top"
             >

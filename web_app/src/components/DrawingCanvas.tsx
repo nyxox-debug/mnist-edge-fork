@@ -256,7 +256,7 @@ const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(({ onS
         WebkitUserSelect: "none",
         userSelect: "none",
       }}
-      className="block border-2 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)] bg-black cursor-crosshair rounded-md w-full aspect-square max-h-[350px] max-w-[350px] mx-auto shrink-0"
+      className="block border-2 border-white/30 shadow-[0_0_15px_rgba(255,255,255,0.05)] bg-black cursor-crosshair rounded-md w-full aspect-square max-h-[350px] max-w-[350px] mx-auto shrink-0"
     />
   );
 });

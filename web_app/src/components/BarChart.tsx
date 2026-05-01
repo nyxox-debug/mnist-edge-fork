@@ -27,7 +27,7 @@ const BarChart: React.FC<BarChartProps> = ({ probabilities }) => {
 
   return (
     <div 
-      className={`w-full aspect-square lg:aspect-auto lg:h-[350px] flex flex-col justify-center overflow-hidden bg-black border-2 border-emerald-500/30 p-4 rounded-md shadow-lg shadow-emerald-500/10 transition-opacity duration-300 ${!hasData ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}
+      className={`w-full aspect-square lg:aspect-auto lg:h-[350px] flex flex-col justify-center overflow-hidden bg-black border-2 border-white/20 p-4 rounded-md shadow-lg shadow-white/5 transition-opacity duration-300 ${!hasData ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}
     >
       <div className="w-full h-full">
         <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
@@ -44,15 +44,15 @@ const BarChart: React.FC<BarChartProps> = ({ probabilities }) => {
           <YAxis 
             dataKey="name" 
             type="category" 
-            tick={{ fill: '#00FF41', fontSize: 14, fontWeight: 'bold' }} 
+            tick={{ fill: '#ffffff', fontSize: 14, fontWeight: 'bold' }} 
             width={35}
           />
           {hasData && (
             <Tooltip 
               cursor={{ fill: 'transparent' }}
-              contentStyle={{ backgroundColor: '#000', borderColor: '#10b981', borderRadius: '4px' }}
-              itemStyle={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}
-              labelStyle={{ color: '#00FF41', marginBottom: '4px', borderBottom: '1px solid rgba(16, 185, 129, 0.3)', paddingBottom: '2px' }}
+              contentStyle={{ backgroundColor: '#000', borderColor: '#ffffff', borderRadius: '4px' }}
+              itemStyle={{ color: '#ffffff', fontSize: '12px', fontWeight: 'bold' }}
+              labelStyle={{ color: '#ffffff', marginBottom: '4px', borderBottom: '1px solid rgba(255, 255, 255, 0.2)', paddingBottom: '2px' }}
               labelFormatter={(label) => `DIGIT: ${label}`}
               /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
               formatter={(value: any) => {
@@ -66,7 +66,7 @@ const BarChart: React.FC<BarChartProps> = ({ probabilities }) => {
             {data.map((entry, index) => (
               <Cell 
                 key={`cell-${index}`} 
-                fill={entry.value > 0.5 ? '#10b981' : '#065f46'} 
+                fill={entry.value > 0.5 ? '#ffffff' : '#666666'} 
               />
             ))}
           </Bar>
