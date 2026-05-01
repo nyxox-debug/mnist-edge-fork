@@ -1,0 +1,1140 @@
+# Prompt:
+this is my current codebase
+
+# File collection from: /home/nyxox/Documents/Projects/mnistAnton/web_app/src
+# Generated: 2026-05-01 13:53:59
+------------------------------------------------------------
+
+## app/globals.css
+
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.2; }
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+------------------------------------------------------------
+
+## app/layout.tsx
+
+import type { Metadata } from "next";
+import { Geist, Geist_Mono } from "next/font/google";
+import "./globals.css";
+
+const geistSans = Geist({
+  variable: "--font-geist-sans",
+  subsets: ["latin"],
+});
+
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
+  subsets: ["latin"],
+});
+
+export const metadata: Metadata = {
+  title: "MNIST Edge Inference | Deep Vision Explorer",
+  description: "Real-time, interactive, zero-latency browser-based digit recognition model (CNN) converted to ONNX and deployed on the Edge.",
+  keywords: ["MNIST", "Neural Network", "Machine Learning", "ONNX Web", "Edge Inference", "React", "Next.js", "CNN"],
+  authors: [{ name: "Obasi Agbai (Longman)" }],
+  icons: {
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icon.png", type: "image/png" },
+    ],
+  },
+  openGraph: {
+    title: "MNIST Edge Inference | Deep Vision Explorer",
+    description: "Real-time, interactive, zero-latency browser-based digit recognition model (CNN) converted to ONNX and deployed on the Edge.",
+    url: "https://mnist-edge-inference.vercel.app",
+    siteName: "MNIST Edge Inference",
+    type: "website",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "MNIST Edge Inference Dashboard",
+      },
+    ],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased bg-neutral-950`} suppressHydrationWarning>
+      <body className="min-h-full flex flex-col bg-neutral-950">
+        {children}
+      </body>
+    </html>
+  );
+}
+------------------------------------------------------------
+
+## app/page.tsx
+
+"use client";
+
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import DrawingCanvas, { DrawingCanvasHandle } from '@/components/DrawingCanvas';
+import { ExternalLink, ChevronUp } from 'lucide-react';
+
+import BarChart from '@/components/BarChart';
+import { preprocessCanvas } from '@/utils/imageProcessing';
+import { runInference, initInference } from '@/utils/onnxInference';
+
+const ANOMALY_THRESHOLD = 0.45; // Adjusted floor for better inclusivity of bold/variable styles
+
+export default function Home() {
+  const canvasRef = useRef<DrawingCanvasHandle>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const inputBufferRef = useRef<HTMLDivElement>(null);
+  const [probabilities, setProbabilities] = useState<number[]>(new Array(10).fill(0));
+  const [isPredicting, setIsPredicting] = useState(false);
+  const [prediction, setPrediction] = useState<number | string | null>("AWAITING_INPUT");
+  const [error, setError] = useState<string | null>(null);
+  const [hasInput, setHasInput] = useState(false);
+  const [noiseLevel, setNoiseLevel] = useState<number>(0);
+  const [rotationAngle, setRotationAngle] = useState<number>(0);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+
+  // Pre-load the ONNX model on mount
+  useEffect(() => {
+    initInference().catch((err) => {
+      console.error('Initial model warmup failed:', err);
+    });
+  }, []);
+
+  const handlePredict = useCallback(async () => {
+    const canvas = canvasRef.current?.getCanvas();
+    if (!canvas || !hasInput) return;
+
+    setIsPredicting(true);
+    setPrediction("RUNNING...");
+    setError(null);
+    try {
+      const processedImage = preprocessCanvas(canvas, { noiseLevel, rotationAngle });
+      
+      const isCanvasBlank = !Array.from(processedImage).some(pixel => pixel > -0.9);
+
+      if (isCanvasBlank) {
+        setPrediction("AWAITING_INPUT");
+        setIsPredicting(false);
+        return;
+      }
+
+      const result = await runInference(processedImage);
+      setProbabilities(result);
+      
+      const maxProb = Math.max(...result);
+      const topDigit = result.indexOf(maxProb);
+
+      // Restore accurate anomaly detection logic
+      if (maxProb < ANOMALY_THRESHOLD) {
+        setPrediction("UNKNOWN");
+      } else {
+        setPrediction(topDigit.toString());
+      }
+    } catch (err) {
+      console.error('Prediction failed:', err);
+      setPrediction("AWAITING_INPUT");
+      if (err instanceof Error) {
+        if (err.message === 'MODEL_LOAD_FAILED') {
+          setError("FATAL_ERROR: Model weights not found. Ensure public/models/mnist_model.onnx exists.");
+        } else if (err.message === 'WASM_BACKEND_INITIALIZATION_FAILED') {
+          setError("FATAL_ERROR: WebAssembly initialization failed. Check browser compatibility.");
+        } else {
+          setError(`INFERENCE_ERROR: ${err.message}`);
+        }
+      } else {
+        setError("INFERENCE_ENGINE_FAILURE: An unknown error occurred during prediction.");
+      }
+    } finally {
+      setIsPredicting(false);
+    }
+  }, [hasInput, noiseLevel, rotationAngle]);
+
+  const handleClear = () => {
+    canvasRef.current?.clearCanvas();
+    setProbabilities(new Array(10).fill(0));
+    setPrediction("AWAITING_INPUT");
+    setError(null);
+    setHasInput(false);
+    setNoiseLevel(0);
+    setRotationAngle(0);
+  };
+
+  const handleUndo = useCallback(() => {
+    canvasRef.current?.undo();
+  }, []);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && canvasRef.current) {
+      try {
+        await canvasRef.current.loadImage(file);
+        const img = new Image();
+        img.onload = () => {
+          setHasInput(true);
+          handlePredict();
+        };
+        img.src = URL.createObjectURL(file);
+      } catch (error) {
+        console.error('Image upload failed:', error);
+      }
+    }
+    e.target.value = '';
+  };
+
+  const handleStroke = useCallback(() => {
+    setHasInput(true);
+    setPrediction("AWAITING_INPUT");
+  }, []);
+
+  const handleResetParameters = () => {
+    setNoiseLevel(0);
+    setRotationAngle(0);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (inputBufferRef.current) {
+        const rect = inputBufferRef.current.getBoundingClientRect();
+        setShowScrollTop(rect.bottom < 0);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleClear();
+      } else if (e.key === 'Enter') {
+        handlePredict();
+      } else if (e.key === 'Backspace') {
+        handleUndo();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handlePredict, handleUndo]);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    let scrollTimeout: NodeJS.Timeout;
+
+    const hasRealResult = prediction !== null && prediction !== "AWAITING_INPUT" && prediction !== "RUNNING...";
+
+    if (hasRealResult && !isPredicting && resultsRef.current) {
+      if (window.innerWidth < 1024) {
+        scrollTimeout = setTimeout(() => {
+          requestAnimationFrame(() => {
+            resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          });
+        }, 300);
+      }
+    }
+
+    return () => {
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+    };
+  }, [prediction, isPredicting]);
+
+  return (
+    <main className="min-h-[100dvh] w-full overflow-x-hidden pt-8 pb-24 lg:pb-0 px-4 sm:px-6 flex flex-col items-center bg-neutral-950 text-emerald-500 font-mono relative">
+      <div className="w-full max-w-6xl">
+        <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-[#00FF41]/30 pb-3 mb-6">
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-wider italic">
+              Handwritten <span className="text-emerald-300">Digit</span> Recognition
+            </h1>
+            <p className="text-xs tracking-widest opacity-80 uppercase">
+              System Status: Online | ONNX Runtime Web Enabled
+            </p>
+          </div>
+
+          <a 
+            href="https://github.com/Longman-max/MNIST-Edge-Inference.git" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-[#00FF41]/70 hover:text-[#00FF41] transition-colors font-mono text-sm mt-4 sm:mt-0"
+            suppressHydrationWarning
+          >
+            <ExternalLink size={20} />
+            <span>[ VIEW_SOURCE ]</span>
+          </a>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 justify-items-center items-start gap-8 lg:gap-x-16 lg:gap-y-8 w-full max-w-6xl mx-auto">
+          <section ref={inputBufferRef} className="w-full max-w-125 flex flex-col justify-start gap-3 order-1">
+            <div className="w-full border-b border-[#00FF41]/30 pb-2 mb-4 text-lg lg:text-xl font-bold tracking-widest uppercase">INPUT_BUFFER</div>
+            
+            <div className="flex flex-wrap items-center justify-start gap-3 w-full mb-4 min-h-[40px]">
+              <button
+                onClick={handleClear}
+                className="px-3 h-8 text-[11px] border border-emerald-500 hover:bg-emerald-500 hover:text-black transition-all uppercase font-bold flex items-center justify-center min-w-[110px]"
+              >
+                Clear_Buffer
+              </button>
+              <label className="px-3 h-8 text-[11px] border border-emerald-500 hover:bg-emerald-500 hover:text-black transition-all uppercase font-bold cursor-pointer flex items-center justify-center min-w-[110px]">
+                Upload_Image
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={handlePredict}
+                disabled={isPredicting || !hasInput}
+                className={`px-3 h-8 text-[11px] border border-emerald-500 transition-all uppercase font-bold flex items-center justify-center min-w-[110px] ${
+                  (isPredicting || !hasInput) 
+                    ? 'opacity-40 cursor-not-allowed' 
+                    : 'hover:bg-emerald-500 hover:text-black cursor-pointer'
+                }`}
+              >
+                {isPredicting ? 'Run_Inference' : 'Run_Inference'}
+              </button>
+            </div>
+
+            <div className="relative group w-full flex justify-center">
+              <div className="relative w-full overflow-hidden rounded-md border-2 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)] bg-black">
+                <div
+                  className="relative w-full transition-transform duration-200 ease-out [&_canvas]:!border-0 [&_canvas]:!shadow-none [&_canvas]:!rounded-none"
+                  style={{ transform: `rotate(${rotationAngle}deg)` }}
+                >
+                  <DrawingCanvas ref={canvasRef} onStroke={handleStroke} rotationAngle={rotationAngle} />
+                </div>
+                {noiseLevel > 0 && (
+                  <div
+                    className="absolute inset-0 pointer-events-none mix-blend-screen"
+                    style={{ opacity: noiseLevel / 100 }}
+                  >
+                    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+                      <filter id="noiseFilter">
+                        <feTurbulence
+                          type="fractalNoise"
+                          baseFrequency={0.65 + (noiseLevel / 100) * 0.35}
+                          numOctaves="3"
+                          stitchTiles="stitch"
+                        />
+                        <feColorMatrix type="saturate" values="0" />
+                      </filter>
+                      <rect width="100%" height="100%" filter="url(#noiseFilter)" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+            </div>
+          </section>
+
+          <div className="w-full border border-[#00FF41]/30 p-3 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 lg:gap-8 rounded-sm bg-[#00FF41]/5 order-2 lg:order-3 lg:col-span-2">
+            <div className="flex flex-col gap-2">
+              <div className="whitespace-nowrap text-xs font-bold tracking-widest uppercase opacity-80">
+                [ PERTURBATION_PARAMETERS ]
+              </div>
+              <button 
+                onClick={handleResetParameters}
+                className="text-[10px] border border-[#00FF41]/30 px-2 py-0.5 hover:bg-[#00FF41] hover:text-black transition-all uppercase font-bold w-fit"
+              >
+                Reset_Values
+              </button>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-6 w-full lg:flex-1">
+              <div className="flex-1 flex flex-col gap-1">
+                <div className="flex justify-between items-center w-full text-[10px] sm:text-xs font-mono opacity-80">
+                  <span>GAUSSIAN_NOISE</span>
+                  <span>{noiseLevel}%</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  value={noiseLevel}
+                  onChange={(e) => setNoiseLevel(Number(e.target.value))}
+                  className="w-full h-1 bg-[#00FF41]/30 rounded-lg appearance-none cursor-pointer accent-[#00FF41]"
+                />
+              </div>
+
+              <div className="flex-1 flex flex-col gap-1">
+                <div className="flex justify-between items-center w-full text-[10px] sm:text-xs font-mono opacity-80">
+                  <span>SPATIAL_ROTATION</span>
+                  <span>{rotationAngle}°</span>
+                </div>
+                <input 
+                  type="range" 
+                  min="-180" 
+                  max="180" 
+                  value={rotationAngle}
+                  onChange={(e) => setRotationAngle(Number(e.target.value))}
+                  className="w-full h-1 bg-[#00FF41]/30 rounded-lg appearance-none cursor-pointer accent-[#00FF41]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <section ref={resultsRef} className="w-full max-w-125 flex flex-col justify-start gap-3 order-3 lg:order-2">
+            <div className="w-full border-b border-[#00FF41]/30 pb-2 mb-4 text-lg lg:text-xl font-bold tracking-widest uppercase">
+              OUTPUT_PROBABILITIES
+            </div>
+
+            <div className="flex flex-col lg:flex-row justify-between items-center w-full gap-3 mb-2 min-h-[40px]">
+              <div className="flex flex-row gap-3">
+                <div className="border border-emerald-500/30 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-emerald-500/5 min-w-[110px]">
+                  <div className="text-[10px] opacity-70 uppercase font-bold text-emerald-700">Inference_Engine</div>
+                  <div className="text-xs font-bold">ONNX-Runtime-Web</div>
+                </div>
+                <div className="border border-emerald-500/30 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-emerald-500/5 min-w-[110px]">
+                  <div className="text-[10px] opacity-70 uppercase font-bold text-emerald-700">Model_Architecture</div>
+                  <div className="text-xs font-bold">CNN (MNIST)</div>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center lg:items-end justify-center text-center lg:text-right overflow-visible">
+                {error ? (
+                  <>
+                    <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-1">FATAL_ERROR</span>
+                    <span className="text-[10px] sm:text-xs font-bold text-red-500 tracking-wider break-words max-w-[200px] leading-tight">
+                      {error}
+                    </span>
+                  </>
+                ) : prediction === "RUNNING..." ? (
+                  <span className="text-xs font-mono text-[#00FF41] uppercase tracking-widest animate-blink">RUNNING...</span>
+                ) : prediction === "UNKNOWN" ? (
+                  <>
+                    <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-1">SYSTEM_WARNING</span>
+                    <span className="text-sm sm:text-base font-bold text-red-500 tracking-wider whitespace-nowrap">ANOMALY DETECTED</span>
+                  </>
+                ) : prediction === "AWAITING_INPUT" ? (
+                  <span className="text-xs font-mono text-[#00FF41]/50 uppercase tracking-widest">AWAITING_INPUT...</span>
+                ) : (
+                  <div className="flex flex-row items-baseline gap-2 text-lg lg:text-xl font-bold text-[#00FF41] uppercase tracking-wider">
+                    <span className="opacity-80">PREDICTION:</span>
+                    <span>{prediction}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <BarChart probabilities={probabilities} />
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <button
+        onClick={scrollToTop}
+        className={`lg:hidden fixed bottom-6 right-6 z-50 p-4 rounded-full bg-[#00FF41] text-black shadow-[0_0_20px_rgba(0,255,65,0.4)] transition-all duration-300 transform ${
+          showScrollTop ? 'translate-y-0 opacity-100 scale-100' : 'translate-y-20 opacity-0 scale-50 pointer-events-none'
+        }`}
+        aria-label="Scroll to Top"
+      >
+        <ChevronUp size={24} strokeWidth={3} />
+      </button>
+    </main>
+  );
+}
+------------------------------------------------------------
+
+## app/robots.ts
+
+import { MetadataRoute } from 'next';
+
+export default function robots(): MetadataRoute.Robots {
+  return {
+    rules: {
+      userAgent: '*',
+      allow: '/',
+    },
+    sitemap: 'https://mnist-edge-inference.vercel.app/sitemap.xml',
+  };
+}
+------------------------------------------------------------
+
+## app/sitemap.ts
+
+import { MetadataRoute } from 'next';
+
+export default function sitemap(): MetadataRoute.Sitemap {
+  return [
+    {
+      url: 'https://mnist-edge-inference.vercel.app',
+      lastModified: new Date(),
+      changeFrequency: 'weekly',
+      priority: 1,
+    },
+  ];
+}
+------------------------------------------------------------
+
+## components/BarChart.tsx
+
+"use client";
+
+import React from 'react';
+import {
+  BarChart as RechartsBarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell
+} from 'recharts';
+
+interface BarChartProps {
+  probabilities: number[];
+}
+
+const BarChart: React.FC<BarChartProps> = ({ probabilities }) => {
+  // Format the probabilities for Recharts
+  const data = probabilities.map((prob, index) => ({
+    name: index.toString(),
+    value: prob,
+  }));
+
+  // Check if we have real inference data (not just initial zeros)
+  const hasData = probabilities.some(p => p > 0);
+
+  return (
+    <div 
+      className={`w-full aspect-square lg:aspect-auto lg:h-[350px] flex flex-col justify-center overflow-hidden bg-black border-2 border-emerald-500/30 p-4 rounded-md shadow-lg shadow-emerald-500/10 transition-opacity duration-300 ${!hasData ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}
+    >
+      <div className="w-full h-full">
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+          <RechartsBarChart
+            data={data}
+            layout="vertical"
+            margin={{ top: 10, right: 30, left: 10, bottom: 5 }}
+          >
+          <XAxis 
+            type="number" 
+            domain={[0, 1]} 
+            hide 
+          />
+          <YAxis 
+            dataKey="name" 
+            type="category" 
+            tick={{ fill: '#00FF41', fontSize: 14, fontWeight: 'bold' }} 
+            width={35}
+          />
+          {hasData && (
+            <Tooltip 
+              cursor={{ fill: 'transparent' }}
+              contentStyle={{ backgroundColor: '#000', borderColor: '#10b981', borderRadius: '4px' }}
+              itemStyle={{ color: '#10b981', fontSize: '12px', fontWeight: 'bold' }}
+              labelStyle={{ color: '#00FF41', marginBottom: '4px', borderBottom: '1px solid rgba(16, 185, 129, 0.3)', paddingBottom: '2px' }}
+              labelFormatter={(label) => `DIGIT: ${label}`}
+              /* eslint-disable-next-line @typescript-eslint/no-explicit-any */
+              formatter={(value: any) => {
+                // Safely handle undefined or non-number values from Recharts payload
+                const numValue = typeof value === 'number' ? value : 0;
+                return [`${(numValue * 100).toFixed(2)}%`, 'CONFIDENCE'];
+              }}
+            />
+          )}
+          <Bar dataKey="value" radius={[0, 4, 4, 0]} isAnimationActive={hasData}>
+            {data.map((entry, index) => (
+              <Cell 
+                key={`cell-${index}`} 
+                fill={entry.value > 0.5 ? '#10b981' : '#065f46'} 
+              />
+            ))}
+          </Bar>
+          </RechartsBarChart>
+          </ResponsiveContainer>
+          </div>
+          </div>
+          );
+          };
+export default BarChart;
+------------------------------------------------------------
+
+## components/DrawingCanvas.tsx
+
+"use client";
+
+import React, { useRef, useEffect, useImperativeHandle, forwardRef, useState } from "react";
+
+export interface DrawingCanvasHandle {
+  clearCanvas: () => void;
+  undo: () => void;
+  getCanvas: () => HTMLCanvasElement | null;
+  loadImage: (file: File) => Promise<void>;
+}
+
+interface DrawingCanvasProps {
+  onStroke?: () => void;
+  rotationAngle?: number;
+}
+
+interface Point {
+  x: number;
+  y: number;
+}
+
+interface Stroke {
+  points: Point[];
+  type: 'draw' | 'image';
+  image?: HTMLImageElement;
+}
+
+const DrawingCanvas = forwardRef<DrawingCanvasHandle, DrawingCanvasProps>(({ onStroke, rotationAngle = 0 }, ref) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const strokesRef = useRef<Stroke[]>([]);
+  const rotationRef = useRef(rotationAngle);
+  const onStrokeRef = useRef(onStroke);
+
+  // Keep refs in sync with props
+  useEffect(() => {
+    rotationRef.current = rotationAngle;
+  }, [rotationAngle]);
+
+  useEffect(() => {
+    onStrokeRef.current = onStroke;
+  }, [onStroke]);
+
+  const redraw = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // Clear with black
+    ctx.fillStyle = "black";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Redraw all strokes
+    strokesRef.current.forEach(stroke => {
+      if (stroke.type === 'draw') {
+        if (stroke.points.length === 0) return;
+        
+        ctx.strokeStyle = "white";
+        ctx.lineWidth = 20;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.beginPath();
+        
+        const firstPoint = stroke.points[0];
+        ctx.moveTo(firstPoint.x, firstPoint.y);
+        
+        // Handle single point strokes
+        if (stroke.points.length === 1) {
+          ctx.lineTo(firstPoint.x, firstPoint.y);
+        } else {
+          for (let i = 1; i < stroke.points.length; i++) {
+            ctx.lineTo(stroke.points[i].x, stroke.points[i].y);
+          }
+        }
+        ctx.stroke();
+        ctx.closePath();
+      } else if (stroke.type === 'image' && stroke.image) {
+        const img = stroke.image;
+        const canvasAspect = canvas.width / canvas.height;
+        const imgAspect = img.width / img.height;
+        
+        let drawWidth, drawHeight, x, y;
+
+        if (imgAspect > canvasAspect) {
+          drawWidth = canvas.width;
+          drawHeight = canvas.width / imgAspect;
+          x = 0;
+          y = (canvas.height - drawHeight) / 2;
+        } else {
+          drawHeight = canvas.height;
+          drawWidth = canvas.height * imgAspect;
+          x = (canvas.width - drawWidth) / 2;
+          y = 0;
+        }
+        ctx.drawImage(img, x, y, drawWidth, drawHeight);
+      }
+    });
+  };
+
+  // Initial canvas setup
+  useEffect(() => {
+    redraw();
+  }, []);
+
+  useImperativeHandle(ref, () => ({
+    clearCanvas: () => {
+      strokesRef.current = [];
+      redraw();
+    },
+    undo: () => {
+      strokesRef.current.pop();
+      redraw();
+    },
+    getCanvas: () => canvasRef.current,
+    loadImage: (file: File) => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => {
+          // Clear previous strokes to ensure image overrides input
+          strokesRef.current = [{
+            type: 'image',
+            points: [],
+            image: img
+          }];
+          redraw();
+          if (onStrokeRef.current) onStrokeRef.current();
+          resolve();
+        };
+        img.onerror = () => reject("Failed to load image");
+        img.src = URL.createObjectURL(file);
+      });
+    },
+  }));
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let isDrawing = false;
+    let currentStrokePoints: Point[] = [];
+
+    const getNormalizedCoordinates = (
+      e: MouseEvent | TouchEvent,
+      canvas: HTMLCanvasElement,
+      angleInDegrees: number
+    ) => {
+      const rect = canvas.getBoundingClientRect();
+      
+      let clientX, clientY;
+      if ("touches" in e) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+      } else {
+        clientX = (e as MouseEvent).clientX;
+        clientY = (e as MouseEvent).clientY;
+      }
+
+      const rawX = clientX - rect.left;
+      const rawY = clientY - rect.top;
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const dx = rawX - cx;
+      const dy = rawY - cy;
+
+      const rad_original = (angleInDegrees * Math.PI) / 180;
+      const cos = Math.abs(Math.cos(rad_original));
+      const sin = Math.abs(Math.sin(rad_original));
+      const unrotatedSize = rect.width / (cos + sin);
+
+      const rad_inv = -rad_original;
+      const rotatedX = dx * Math.cos(rad_inv) - dy * Math.sin(rad_inv);
+      const rotatedY = dx * Math.sin(rad_inv) + dy * Math.cos(rad_inv);
+
+      return {
+        x: (rotatedX / unrotatedSize + 0.5) * canvas.width,
+        y: (rotatedY / unrotatedSize + 0.5) * canvas.height
+      };
+    };
+
+    const startDrawing = (e: MouseEvent | TouchEvent) => {
+      e.preventDefault();
+      isDrawing = true;
+
+      const { x, y } = getNormalizedCoordinates(e, canvas, rotationRef.current);
+      currentStrokePoints = [{ x, y }];
+
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 20;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      if (onStrokeRef.current) onStrokeRef.current();
+    };
+
+    const draw = (e: MouseEvent | TouchEvent) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+
+      const { x, y } = getNormalizedCoordinates(e, canvas, rotationRef.current);
+      currentStrokePoints.push({ x, y });
+      ctx.lineTo(x, y);
+      ctx.stroke();
+    };
+
+    const stopDrawing = (e: MouseEvent | TouchEvent) => {
+      e.preventDefault();
+      if (!isDrawing) return;
+      isDrawing = false;
+      ctx.closePath();
+      
+      if (currentStrokePoints.length > 0) {
+        strokesRef.current.push({
+          type: 'draw',
+          points: currentStrokePoints
+        });
+      }
+    };
+
+    canvas.addEventListener("mousedown", startDrawing);
+    canvas.addEventListener("mousemove", draw);
+    canvas.addEventListener("mouseup", stopDrawing);
+    canvas.addEventListener("mouseleave", stopDrawing);
+
+    canvas.addEventListener("touchstart", startDrawing, { passive: false });
+    canvas.addEventListener("touchmove", draw, { passive: false });
+    canvas.addEventListener("touchend", stopDrawing, { passive: false });
+    canvas.addEventListener("touchcancel", stopDrawing, { passive: false });
+
+    return () => {
+      canvas.removeEventListener("mousedown", startDrawing);
+      canvas.removeEventListener("mousemove", draw);
+      canvas.removeEventListener("mouseup", stopDrawing);
+      canvas.removeEventListener("mouseleave", stopDrawing);
+
+      canvas.removeEventListener("touchstart", startDrawing);
+      canvas.removeEventListener("touchmove", draw);
+      canvas.removeEventListener("touchend", stopDrawing);
+      canvas.removeEventListener("touchcancel", stopDrawing);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={400}
+      height={400}
+      style={{
+        touchAction: "none",
+        WebkitUserSelect: "none",
+        userSelect: "none",
+      }}
+      className="block border-2 border-emerald-500/50 shadow-[0_0_15px_rgba(16,185,129,0.1)] bg-black cursor-crosshair rounded-md w-full aspect-square max-h-[350px] max-w-[350px] mx-auto shrink-0"
+    />
+  );
+});
+
+DrawingCanvas.displayName = "DrawingCanvas";
+
+export default DrawingCanvas;
+------------------------------------------------------------
+
+## utils/imageProcessing.ts
+
+/**
+ * Options for adversarial perturbations applied during preprocessing.
+ */
+export interface PerturbationOptions {
+  /** Gaussian noise level as a percentage (0-100). */
+  noiseLevel?: number;
+  /** Spatial rotation angle in degrees (-180 to 180). */
+  rotationAngle?: number;
+}
+
+/**
+ * Generates a random number from a standard normal distribution
+ * using the Box-Muller transform.
+ */
+function gaussianRandom(): number {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// Reusable offscreen canvases for performance
+let offscreenCanvas: HTMLCanvasElement | null = null;
+let rotatedCanvas: HTMLCanvasElement | null = null;
+
+/**
+ * Preprocesses the HTML canvas image for MNIST model inference.
+ * Enhanced with Center-of-Mass centering for optimal model accuracy.
+ */
+export function preprocessCanvas(
+  canvas: HTMLCanvasElement,
+  perturbation: PerturbationOptions = {}
+): Float32Array {
+  const { noiseLevel = 0, rotationAngle = 0 } = perturbation;
+  const targetSize = 28;
+  const mnistDigitSize = 20; // MNIST digits are typically 20x20 within 28x28
+
+  // --- Step 1: Rotation on a staging canvas ---
+  let sourceCanvas: HTMLCanvasElement = canvas;
+  if (rotationAngle !== 0) {
+    if (!rotatedCanvas) rotatedCanvas = document.createElement('canvas');
+    rotatedCanvas.width = canvas.width;
+    rotatedCanvas.height = canvas.height;
+    const rCtx = rotatedCanvas.getContext('2d');
+    if (rCtx) {
+      rCtx.fillStyle = 'black';
+      rCtx.fillRect(0, 0, rotatedCanvas.width, rotatedCanvas.height);
+      const cx = rotatedCanvas.width / 2;
+      const cy = rotatedCanvas.height / 2;
+      rCtx.translate(cx, cy);
+      rCtx.rotate((rotationAngle * Math.PI) / 180);
+      rCtx.translate(-cx, -cy);
+      rCtx.drawImage(canvas, 0, 0);
+      sourceCanvas = rotatedCanvas;
+    }
+  }
+
+  // --- Step 2: Extract Grayscale and Detect Bounding Box ---
+  const sCtx = sourceCanvas.getContext('2d', { willReadFrequently: true });
+  if (!sCtx) throw new Error('Could not get source canvas context');
+  
+  const srcData = sCtx.getImageData(0, 0, sourceCanvas.width, sourceCanvas.height).data;
+  let minX = sourceCanvas.width, minY = sourceCanvas.height, maxX = 0, maxY = 0;
+  let found = false;
+
+  // Temporary grayscale buffer for CoM calculation
+  const grayscaleBuffer = new Float32Array(sourceCanvas.width * sourceCanvas.height);
+
+  for (let y = 0; y < sourceCanvas.height; y++) {
+    for (let x = 0; x < sourceCanvas.width; x++) {
+      const idx = (y * sourceCanvas.width + x) * 4;
+      const r = srcData[idx];
+      const g = srcData[idx + 1];
+      const b = srcData[idx + 2];
+      const alpha = srcData[idx + 3];
+      
+      // Use alpha-weighted average for better detection of strokes
+      const val = ((r + g + b) / 3) * (alpha / 255);
+      grayscaleBuffer[y * sourceCanvas.width + x] = val;
+
+      if (val > 20) {
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+        found = true;
+      }
+    }
+  }
+
+  // --- Step 3: Centering logic (Bounding Box Scale + Center of Mass) ---
+  if (!offscreenCanvas) {
+    offscreenCanvas = document.createElement('canvas');
+    offscreenCanvas.width = targetSize;
+    offscreenCanvas.height = targetSize;
+  }
+  const ctx = offscreenCanvas.getContext('2d');
+  if (!ctx) throw new Error('Could not get offscreen context');
+
+  ctx.fillStyle = 'black';
+  ctx.fillRect(0, 0, targetSize, targetSize);
+
+  if (found) {
+    const digitW = (maxX - minX) + 1;
+    const digitH = (maxY - minY) + 1;
+    
+    // Scale digit to fit 20x20 box
+    const scale = mnistDigitSize / Math.max(digitW, digitH);
+    const finalW = digitW * scale;
+    const finalH = digitH * scale;
+
+    // Create a temporary canvas for the scaled digit to calculate its CoM
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = targetSize;
+    tempCanvas.height = targetSize;
+    const tCtx = tempCanvas.getContext('2d');
+    if (tCtx) {
+      tCtx.fillStyle = 'black';
+      tCtx.fillRect(0, 0, targetSize, targetSize);
+      
+      // Initial draw centered by bounding box
+      const bx = (targetSize - finalW) / 2;
+      const by = (targetSize - finalH) / 2;
+      tCtx.drawImage(sourceCanvas, minX, minY, digitW, digitH, bx, by, finalW, finalH);
+      
+      // Calculate Center of Mass of the scaled digit
+      const tData = tCtx.getImageData(0, 0, targetSize, targetSize).data;
+      let sumMass = 0, sumX = 0, sumY = 0;
+      for (let y = 0; y < targetSize; y++) {
+        for (let x = 0; x < targetSize; x++) {
+          const val = tData[(y * targetSize + x) * 4];
+          if (val > 10) {
+            sumMass += val;
+            sumX += x * val;
+            sumY += y * val;
+          }
+        }
+      }
+
+      if (sumMass > 0) {
+        const comX = sumX / sumMass;
+        const comY = sumY / sumMass;
+        
+        // Shift digit so CoM is at (14, 14)
+        const dx = 14 - comX;
+        const dy = 14 - comY;
+        
+        ctx.drawImage(tempCanvas, dx, dy);
+      } else {
+        ctx.drawImage(tempCanvas, 0, 0);
+      }
+    }
+  }
+
+  // --- Step 4: Final Normalization & Noise ---
+  const finalData = ctx.getImageData(0, 0, targetSize, targetSize).data;
+  const float32Data = new Float32Array(targetSize * targetSize);
+  const sigma = (noiseLevel / 100) * 80;
+
+  for (let i = 0; i < finalData.length; i += 4) {
+    let grayscale = (finalData[i] + finalData[i+1] + finalData[i+2]) / 3.0;
+    if (noiseLevel > 0) {
+      grayscale = Math.max(0, Math.min(255, grayscale + gaussianRandom() * sigma));
+    }
+    // Formula from train_mnist.ipynb: transforms.Normalize((0.5,), (0.5,))
+    // (x / 255.0 - 0.5) / 0.5
+    float32Data[i / 4] = (grayscale / 255.0 - 0.5) / 0.5;
+  }
+
+  return float32Data;
+}
+------------------------------------------------------------
+
+## utils/onnxInference.ts
+
+import * as ort from 'onnxruntime-web';
+
+// set wasm path for onnxruntime-web
+// In a typical Next.js setup, you'd copy these from node_modules to public/static/js/
+// For now, we'll use the default CDN fallback or local path if available
+ort.env.wasm.wasmPaths = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/';
+
+// Cache the session to avoid reloading the model on every inference
+let cachedSession: ort.InferenceSession | null = null;
+
+/**
+ * Pre-loads the ONNX model and initializes the inference session.
+ */
+export async function initInference(): Promise<void> {
+  if (cachedSession) return;
+
+  try {
+    cachedSession = await ort.InferenceSession.create('/models/mnist_model.onnx', {
+      executionProviders: ['wasm'], // Force WASM for stability across browsers
+      externalData: [
+        {
+          path: 'mnist_model.onnx.data',
+          data: '/models/mnist_model.onnx.data',
+        },
+      ],
+    });
+
+    // Warm up the session with a dummy inference to fully initialize the WASM runtime
+    const dummyInput = new Float32Array(28 * 28).fill(0);
+    const tensorInput = new ort.Tensor('float32', dummyInput, [1, 1, 28, 28]);
+    const feeds: Record<string, ort.Tensor> = {};
+    feeds[cachedSession.inputNames[0]] = tensorInput;
+    await cachedSession.run(feeds);
+  } catch (error) {
+    console.error('Failed to initialize ONNX session:', error);
+    throw error;
+  }
+}
+
+/**
+ * Runs inference on the preprocessed 28x28 grayscale image array.
+ */
+export async function runInference(imageArray: Float32Array): Promise<number[]> {
+  try {
+    if (!cachedSession) {
+      await initInference();
+    }
+    
+    // Type assertion because initInference ensures cachedSession is set or throws
+    const session = cachedSession!;
+
+    const tensorInput = new ort.Tensor('float32', imageArray, [1, 1, 28, 28]);
+    const feeds: Record<string, ort.Tensor> = {};
+    feeds[session.inputNames[0]] = tensorInput;
+    
+    const results = await session.run(feeds);
+    const outputName = session.outputNames[0];
+    const outputTensor = results[outputName];
+    const logits = outputTensor.data as Float32Array;
+
+    return softmax(Array.from(logits));
+  } catch (error) {
+    // Re-throw with descriptive context
+    if (error instanceof Error) {
+      if (error.message.includes('no available backend')) {
+        throw new Error('WASM_BACKEND_INITIALIZATION_FAILED');
+      }
+      if (error.message.includes('failed to load model')) {
+        throw new Error('MODEL_LOAD_FAILED');
+      }
+    }
+    throw error;
+  }
+}
+
+/**
+ * Helper function: Softmax implementation for an array of numbers.
+ */
+function softmax(logits: number[]): number[] {
+  const maxLogit = Math.max(...logits); // Numerical stability
+  const scores = logits.map((l) => Math.exp(l - maxLogit));
+  const totalScore = scores.reduce((a, b) => a + b, 0);
+  return scores.map((s) => s / totalScore);
+}
+------------------------------------------------------------
+
