@@ -252,6 +252,18 @@ export default function Home() {
             >
                 <ChevronUp size={24} strokeWidth={3} />
             </button>
+
+            <footer className="w-full text-center text-xs text-white/40 py-6 font-mono">
+                This is a fork of{' '}
+                <a
+                    href="https://github.com/Longman-max/MNIST-Edge-Inference"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-white/60 hover:text-white underline"
+                >
+                    github.com/Longman-max/MNIST-Edge-Inference
+                </a>
+            </footer>
         </main>
     );
 }

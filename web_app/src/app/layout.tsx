@@ -27,9 +27,9 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: "MNIST Edge Inference | Deep Vision Explorer",
-    description: "Real-time, interactive, zero-latency browser-based digit recognition model (CNN) converted to ONNX and deployed on the Edge.",
-    url: "https://mnist-edge-inference.vercel.app",
-    siteName: "MNIST Edge Inference",
+    description: "MNIST",
+    url: "",
+    siteName: "mnist",
     type: "website",
     images: [
       {
