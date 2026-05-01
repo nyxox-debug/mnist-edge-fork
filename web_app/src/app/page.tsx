@@ -93,24 +93,6 @@ export default function Home() {
         canvasRef.current?.undo();
     }, []);
 
-    const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (file && canvasRef.current) {
-            try {
-                await canvasRef.current.loadImage(file);
-                const img = new Image();
-                img.onload = () => {
-                    setHasInput(true);
-                    handlePredict();
-                };
-                img.src = URL.createObjectURL(file);
-            } catch (error) {
-                console.error('Image upload failed:', error);
-            }
-        }
-        e.target.value = '';
-    };
-
     const handleStroke = useCallback(() => {
         setHasInput(true);
         setPrediction("AWAITING_INPUT");
@@ -205,15 +187,6 @@ export default function Home() {
                             >
                                 Clear_Buffer
                             </button>
-                            <label className="px-3 h-8 text-[11px] border border-white hover:bg-white hover:text-black transition-all uppercase font-bold cursor-pointer flex items-center justify-center min-w-[110px]">
-                                Upload_Image
-                                <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={handleImageUpload}
-                                    className="hidden"
-                                />
-                            </label>
                             <button
                                 onClick={handlePredict}
                                 disabled={isPredicting || !hasInput}
