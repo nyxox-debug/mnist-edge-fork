@@ -19,10 +19,10 @@ export const metadata: Metadata = {
   authors: [{ name: "Obasi Agbai (Longman)" }],
   icons: {
     icon: [
-      { url: "/icon.png", type: "image/png" },
+      { url: "/icon.svg", type: "image/svg+xml" },
     ],
     apple: [
-      { url: "/icon.png", type: "image/png" },
+      { url: "/icon.svg", type: "image/svg+xml" },
     ],
   },
   openGraph: {
