@@ -159,7 +159,7 @@ export default function Home() {
             <div className="w-full max-w-6xl">
                 <header className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-end border-b border-white/20 pb-3 mb-6">
                     <div className="flex flex-col gap-1">
-                        <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-wider italic">
+                        <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-wider">
                             Handwritten <span className="text-white">Digit</span> Recognition
                         </h1>
                     </div>
@@ -191,8 +191,8 @@ export default function Home() {
                                 onClick={handlePredict}
                                 disabled={isPredicting || !hasInput}
                                 className={`px-3 h-8 text-[11px] border border-white transition-all uppercase font-bold flex items-center justify-center min-w-[110px] ${(isPredicting || !hasInput)
-                                        ? 'opacity-40 cursor-not-allowed'
-                                        : 'hover:bg-white hover:text-black cursor-pointer'
+                                    ? 'opacity-40 cursor-not-allowed'
+                                    : 'hover:bg-white hover:text-black cursor-pointer'
                                     }`}
                             >
                                 {isPredicting ? 'Run_Inference' : 'Run_Inference'}
