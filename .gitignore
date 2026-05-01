@@ -1,0 +1,67 @@
+# =====================
+# Python
+# =====================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# =====================
+# Jupyter Notebook
+# =====================
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+*-checkpoint.ipynb
+
+# Jupyter config
+.jupyter/
+
+# =====================
+# Virtual environments
+# =====================
+venv/
+.venv/
+env/
+ENV/
+
+# =====================
+# IDEs
+# =====================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =====================
+# OS files
+# =====================
+.DS_Store
+Thumbs.db
+
+# =====================
+# Logs
+# =====================
+*.log
+
+# =====================
+# Data (optional - uncomment if needed)
+# =====================
+# data/
+# *.csv
+# *.parquet
+
+# =====================
+# Secrets / env files
+# =====================
+.env
+.env.local
