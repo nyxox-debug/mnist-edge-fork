@@ -236,43 +236,6 @@ export default function Home() {
                             OUTPUT_PROBABILITIES
                         </div>
 
-                        <div className="flex flex-col lg:flex-row justify-between items-center w-full gap-3 mb-2 min-h-[40px]">
-                            <div className="flex flex-row gap-3">
-                                <div className="border border-white/20 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-white/5 min-w-[110px]">
-                                    <div className="text-[10px] opacity-70 uppercase font-bold text-gray-300">Inference_Engine</div>
-                                    <div className="text-xs font-bold">ONNX-Runtime-Web</div>
-                                </div>
-                                <div className="border border-white/20 px-3 py-1.5 flex flex-col justify-center rounded-sm bg-white/5 min-w-[110px]">
-                                    <div className="text-[10px] opacity-70 uppercase font-bold text-gray-300">Model_Architecture</div>
-                                    <div className="text-xs font-bold">CNN (MNIST)</div>
-                                </div>
-                            </div>
-
-                            <div className="flex flex-col items-center lg:items-end justify-center text-center lg:text-right overflow-visible">
-                                {error ? (
-                                    <>
-                                        <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-1">FATAL_ERROR</span>
-                                        <span className="text-[10px] sm:text-xs font-bold text-red-500 tracking-wider break-words max-w-[200px] leading-tight">
-                                            {error}
-                                        </span>
-                                    </>
-                                ) : prediction === "RUNNING..." ? (
-                                    <span className="text-xs font-mono text-white uppercase tracking-widest animate-blink">RUNNING...</span>
-                                ) : prediction === "UNKNOWN" ? (
-                                    <>
-                                        <span className="text-[10px] text-red-500 font-bold uppercase tracking-widest mb-1">SYSTEM_WARNING</span>
-                                        <span className="text-sm sm:text-base font-bold text-red-500 tracking-wider whitespace-nowrap">ANOMALY DETECTED</span>
-                                    </>
-                                ) : prediction === "AWAITING_INPUT" ? (
-                                    <span className="text-xs font-mono text-white/50 uppercase tracking-widest">AWAITING_INPUT...</span>
-                                ) : (
-                                    <div className="flex flex-row items-baseline gap-2 text-lg lg:text-xl font-bold text-white uppercase tracking-wider">
-                                        <span className="opacity-80">PREDICTION:</span>
-                                        <span>{prediction}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
 
                         <div>
                             <BarChart probabilities={probabilities} />
