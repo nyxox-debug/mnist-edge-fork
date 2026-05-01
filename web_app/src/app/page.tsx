@@ -180,13 +180,10 @@ export default function Home() {
                         <h1 className="text-2xl sm:text-3xl font-bold uppercase tracking-wider italic">
                             Handwritten <span className="text-white">Digit</span> Recognition
                         </h1>
-                        <p className="text-xs tracking-widest opacity-80 uppercase">
-                            System Status: Online | ONNX Runtime Web Enabled
-                        </p>
                     </div>
 
                     <a
-                        href="https://github.com/Longman-max/MNIST-Edge-Inference.git"
+                        href="https://github.com/Nyxox-debug/mnist-edge-fork"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2 text-white/70 hover:text-white transition-colors font-mono text-sm mt-4 sm:mt-0"
